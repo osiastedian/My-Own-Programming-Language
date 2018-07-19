@@ -24,11 +24,11 @@ class CharacterParser:
 
     def isUpperCase(self, char):
         num = ord(char)
-        return num >= ord('A') & num <= ord('Z')
+        return (num >= ord('A')) & (num <= ord('Z'))
     
     def isLowerCase(self, char):
         num = ord(char)
-        return num >= ord('a') & num <= ord('z')
+        return (num >= ord('a')) & (num <= ord('z'))
     
     def isUnderscore(self, char):
         return char == '_'
