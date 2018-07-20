@@ -7,8 +7,14 @@ interpreter = Interpreter()
 
 str = ','
 # print(str, ':', interpreter.isValidIdentifier(str))
-str = 'VAR abc, abcd AS INT'
-print(str, ':', interpreter.isValidInitialization(str))
+# str = 'VAR abc, abcd AS INT'
+# print(str, ':', interpreter.isValidInitializationStatement(str))
+# str = '* this is a comment'
+# print(str, ':', interpreter.isValidCommentStatement(str))
+str = 'START'
+print(str, ':', interpreter.isValidStartStatement(str))
+str = 'STOP'
+print(str, ':', interpreter.isValidStopStatement(str))
 # str = 'abd1'
 # print(str, ':', interpreter.isValidIdentifier(str))
 # str = '1abc'
