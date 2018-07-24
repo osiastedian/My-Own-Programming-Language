@@ -20,6 +20,12 @@ class CharacterParser:
         LTEQ = 13
         EQEQ = 14
         NTEQ = 15
+        QUOTE = 16
+        OSQRBK = 17
+        CSQRBK = 18
+        SPECIAL = 19
+        SHARP = 20
+        DOT = 21
 
     def isDigit(self, char):
         num = ord(char)
@@ -78,6 +84,24 @@ class CharacterParser:
     def isNTEQSign(self, char):
         return char == '<>'
     
+    def isQuoteSign(self, char):
+        return char == '\"'
+    
+    def isOpenSqrBracket(self, char):
+        return char == '['
+    
+    def isCloseSqrBracket(self, char):
+        return char == ']'
+    
+    def isSpecialChar(self, char):
+        return not (self.isLetter(char) | self.isDigit(char))
+
+    def isSharpSign(self, char):
+        return char == '#'
+
+    def isDOTSign(self, char):
+        return char == '.'
+
     def getCode(self, str):
         if(self.isDigit(str)):
             return self.Code.DIGIT
@@ -111,5 +135,17 @@ class CharacterParser:
             return self.Code.EQEQ
         if(self.isNTEQSign(str)):
             return self.Code.NTEQ
+        if(self.isQuoteSign(str)):
+            return self.Code.QUOTE
+        if(self.isOpenSqrBracket(str)):
+            return self.Code.OSQRBK
+        if(self.isCloseSqrBracket(str)):
+            return self.Code.CSQRBK
+        if(self.isSharpSign(str)):
+            return self.Code.SHARP
+        if(self.isDOTSign(str)):
+            return self.Code.DOT
+        if(self.isSpecialChar(str)):
+            return self.Code.SPECIAL
         return self.Code.ERROR
         

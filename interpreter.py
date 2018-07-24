@@ -15,6 +15,13 @@ class Interpreter:
         START = 5
         STOP = 6
         COMMENT_OP = 7
+        NEWLINE = 8
+        CONCATENATOR = 9
+        OUTPUT = 10
+        STRING = 11
+        ARITHMETIC_OP = 12
+        NUMERIC_CONST = 13
+
     
     def __init__(self):
         self.charParser = CharacterParser()
@@ -109,6 +116,51 @@ class Interpreter:
         }
         return self.validate(terms,state,finalStates, deadStates, table, mySwitcher, None, debug, 1)
 
+    def isValidOutputStatement(self, strLine, debug = False):
+        state = 1
+        table = [
+        #    0, 1, 2, 3, 4
+            [0, 2, 0, 0, 0], # OUTPUT
+            [0, 0, 3, 0, 3], # Identifier
+            [0, 0, 3, 0, 3], # String Literal
+            [0, 0, 0, 4, 0], # Concatenator
+            [0, 0, 3, 0, 3], # New Line
+            [0, 0, 0, 0, 0] # Others
+        ]
+        terms = re.split(' ',strLine)
+        othersInput = 5
+        finalStates = [ 3 ]
+        deadStates = [ 0 ]
+        mySwitcher = {
+            self.Code.OUTPUT: 0,
+            self.Code.IDENTIFIER: 1,
+            self.Code.STRING: 2,
+            self.Code.CONCATENATOR: 3,
+            self.Code.NEWLINE: 4
+        }
+        return self.validate(terms,state,finalStates, deadStates, table, mySwitcher, None, debug, othersInput)
+
+    def isValidArithmeticOperation(self, strLine, debug = False):
+        state = 1
+        table = [
+        #    0, 1, 2, 3
+            [0, 2, 0, 2], # Numeric Constant
+            [0, 2, 0, 2], # Identifier
+            [0, 0, 3, 0], # ArithmeticOperator
+            [0, 0, 3, 0], # CommentOper for Multiply Sign
+            [0, 0, 0, 0]  # Others
+        ]
+        terms = re.split(' |(\+)|(\-)|(\/)|(\*)',strLine)
+        othersInput = 4
+        finalStates = [ 2 ]
+        deadStates = [ 0 ]
+        mySwitcher = {
+            self.Code.NUMERIC_CONST: 0,
+            self.Code.IDENTIFIER: 1,
+            self.Code.ARITHMETIC_OP: 2,
+            self.Code.COMMENT_OP: 3
+        }
+        return self.validate(terms,state,finalStates, deadStates, table, mySwitcher, None, debug, othersInput)
 
     # PARSERS
 
@@ -130,6 +182,48 @@ class Interpreter:
         }
         return self.validate(str, state, finalStates, deadStates, table, mySwitcher, self.charParser)
     
+    def isValidString(self, str, debug = False):
+        state = 1
+        table = [
+        #    0  1  2, 3, 4, 5
+            [0, 2, 3, 0, 5, 0], # "
+            [0, 0, 4, 0, 5, 0], # [
+            [0, 0, 0, 0, 0, 2], # ]
+            [0, 0, 2, 0, 0, 0], # Digit
+            [0, 0, 2, 0, 0, 0], # Letter
+            [0, 0, 2, 0, 5, 0], # Any
+        ]
+        anyState = 5
+        finalStates = [ 3 ]
+        deadStates = [ 0 ]
+        mySwitcher = {
+            self.charParser.Code.QUOTE: 0,
+            self.charParser.Code.OSQRBK: 1,
+            self.charParser.Code.CSQRBK: 2,
+            self.charParser.Code.DIGIT: 3,
+            self.charParser.Code.LETTER: 4
+        }
+        return self.validate(str, state, finalStates, deadStates, table, mySwitcher, self.charParser, debug, anyState)
+
+    def isValidNumericConstant(self, str, debug = False):
+        state = 1
+        table = [
+        #    0  1  2, 3, 4
+            [0, 2, 2, 4, 4], # Digit
+            [0, 3, 3, 0, 0], # dot
+            [0, 0, 0, 0, 0], # Any
+        ]
+        anyState = 5
+        finalStates = [ 2, 4 ]
+        deadStates = [ 0 ]
+        mySwitcher = {
+            self.charParser.Code.DIGIT: 0,
+            self.charParser.Code.DOT: 0,
+        }
+        return self.validate(str, state, finalStates, deadStates, table, mySwitcher, self.charParser, debug, anyState)
+    
+    # KEYWORDS
+
     def isValidVAR(self, str):
         return str == "VAR"
 
@@ -174,6 +268,23 @@ class Interpreter:
             return False
         return self.charParser.isMultiplySign(str[0])
 
+    def isArithmeticOperator(self, str):
+        code  = self.charParser.getCode(str)
+        opSwitcher = {
+            self.charParser.Code.PLUS: True,
+            self.charParser.Code.MINUS: True,
+            self.charParser.Code.DIVIDE: True,
+            self.charParser.Code.MULTIPLY: True
+        }
+        print(opSwitcher.get(code,False))
+        return opSwitcher.get(code,False)
+
+    def isNewLine(self, str):
+        return True if (len(str) == 1) & (self.charParser.getCode(str[0]) == self.charParser.Code.SHARP) else False
+
+    def isConcatenator(self, str):
+        return True if (len(str) == 1) & (self.charParser.getCode(str[0]) == self.charParser.Code.AMPERSAND) else False
+
     def getCode(self, str):
         # KEYWORDS
         if(self.isValidVAR(str)):
@@ -186,14 +297,25 @@ class Interpreter:
             return self.Code.STOP
         if(self.isValidDataType(str)):
             return self.Code.DATA_TYPE
+        if(self.isOutput(str)):
+            return self.Code.OUTPUT
         # Dynamice
         if(self.isValidIdentifier(str)):
             return self.Code.IDENTIFIER
-        
+        if(self.isValidString(str)):
+            return self.Code.STRING
+        if(self.isValidNumericConstant(str)):
+            return self.Code.NUMERIC_CONST
         # characters
         if(self.charParser.isComma(str)):
             return self.Code.COMMA
         if(self.isCommentOperator(str)):
             return self.Code.COMMENT_OP
+        if(self.isConcatenator(str)):
+            return self.Code.CONCATENATOR
+        if(self.isNewLine(str)):
+            return self.Code.NEWLINE
+        if(self.isArithmeticOperator(str)):
+            return self.Code.ARITHMETIC_OP
         return self.Code.ERROR
     
