@@ -7,7 +7,7 @@ interpreter = Interpreter()
 
 # str = 'abcd = 1'
 # print(str, interpreter.isValidAsignmentStatement(str))
-str = '123 + 123 / a - b * c'
+str = 'a + b + 123'
 print(str, interpreter.isValidArithmeticOperation(str, True))
 # str = '123'
 # print(str, interpreter.isValidNumericConstant(str, True))

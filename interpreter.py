@@ -5,6 +5,14 @@ from enum import Enum
 
 class Interpreter:
 
+    class Node:
+        def __init__(self, value):
+            self.value = value
+            self.left = None
+            self.right = None
+        def __repr__(self):
+            return str(self.__dict__)
+
     class Code(Enum):
         ERROR = -1
         VAR = 0
@@ -141,27 +149,41 @@ class Interpreter:
         return self.validate(terms,state,finalStates, deadStates, table, mySwitcher, None, debug, othersInput)
 
     def isValidArithmeticOperation(self, strLine, debug = False):
-        state = 1
-        table = [
-        #    0, 1, 2, 3
-            [0, 2, 0, 2], # Numeric Constant
-            [0, 2, 0, 2], # Identifier
-            [0, 0, 3, 0], # ArithmeticOperator
-            [0, 0, 3, 0], # CommentOper for Multiply Sign
-            [0, 0, 0, 0]  # Others
-        ]
-        terms = re.split(' |(\+)|(\-)|(\/)|(\*)',strLine)
-        othersInput = 4
-        finalStates = [ 2 ]
-        deadStates = [ 0 ]
-        mySwitcher = {
-            self.Code.NUMERIC_CONST: 0,
-            self.Code.IDENTIFIER: 1,
-            self.Code.ARITHMETIC_OP: 2,
-            self.Code.COMMENT_OP: 3
-        }
-        return self.validate(terms,state,finalStates, deadStates, table, mySwitcher, None, debug, othersInput)
+        stack = []
+        strLine = strLine.replace('(',' ( ')
+        strLine = strLine.replace(')',' ) ')
+        strLine = strLine.replace('+',' + ')
+        strLine = strLine.replace('-',' - ')
+        strLine = strLine.replace('/',' / ')
+        strLine = strLine.replace('*',' * ')
+        nodeList = []
+        for elem in strLine.split():
+            temp = self.Node(elem)
+            nodeList.append(temp)
+        length = len(nodeList)
+        
+        while len(nodeList) != 1:
+            index = 0
+            while index < len(nodeList):
+                if(self.isArithmeticOperator(nodeList[index].value)):
+                    nodeList[index].right = nodeList[index+1]
+                    nodeList[index].left = nodeList[index-1]
+                    del nodeList[index+1]
+                    del nodeList[index-1]
+                    continue
+                index = index + 1
+        # print('Final:',nodeList)
+        self.inorder(nodeList[0])
+        # print(strLine.split())
+    
+    def inorder(self, t):
+        if t is not None:
+            self.inorder(t.left)
+            print (t.value),
+            self.inorder(t.right)
 
+    def isValidBooleanExpression(self, strLine, debug = False):
+        return
     # PARSERS
 
     def isValidIdentifier(self, str):
@@ -276,7 +298,7 @@ class Interpreter:
             self.charParser.Code.DIVIDE: True,
             self.charParser.Code.MULTIPLY: True
         }
-        print(opSwitcher.get(code,False))
+        # print(opSwitcher.get(code,False))
         return opSwitcher.get(code,False)
 
     def isNewLine(self, str):

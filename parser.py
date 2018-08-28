@@ -103,6 +103,8 @@ class CharacterParser:
         return char == '.'
 
     def getCode(self, str):
+        if(len(str) > 1):
+            return self.Code.ERROR
         if(self.isDigit(str)):
             return self.Code.DIGIT
         if(self.isLetter(str)):
