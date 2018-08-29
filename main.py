@@ -1,14 +1,23 @@
 from parser import CharacterParser
 from interpreter import Interpreter
 
+import re
 
 parser = CharacterParser()
 interpreter = Interpreter()
 
+str = "VAR abcd = 10 AS INT"
+print(str, interpreter.isValidInitializationStatement(str, True))
+# str = 'abc=b=10'
+# print(str, interpreter.isValidAssignmentStatement(str, True))
+# str = "TRUEa"
+# print(str, interpreter.isValidBooleanConstant(str))
+# str = "'[#]'"
+# print(str, interpreter.isValidCharacterConstant(str))
 # str = 'abcd = 1'
 # print(str, interpreter.isValidAsignmentStatement(str))
-str = 'a + b + 123'
-print(str, interpreter.isValidArithmeticOperation(str, True))
+# str = 'a + b + 123'
+# print(str, interpreter.isValidArithmeticOperation(str, True))
 # str = '123'
 # print(str, interpreter.isValidNumericConstant(str, True))
 

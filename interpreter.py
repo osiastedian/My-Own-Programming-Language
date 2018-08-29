@@ -26,17 +26,21 @@ class Interpreter:
         NEWLINE = 8
         CONCATENATOR = 9
         OUTPUT = 10
-        STRING = 11
+        STRING_CONST = 11
         ARITHMETIC_OP = 12
         NUMERIC_CONST = 13
+        BOOLEAN_CONST = 14
+        CHARACTER_CONST = 15
+        EQUAL = 16
 
+        ASSIGNMENT_STMT = 100
     
     def __init__(self):
         self.charParser = CharacterParser()
         self.memory = []
     
     # STATEMENTS
-    def validate(self, terms, startState, finalStates, deadStates, table, switcher, coder = None, debug = False, anyInputCode = -1):
+    def validate(self, terms, startState, finalStates, deadStates, table, switcher, coder = None, debug = False, anyInputCode = -1, customGetCode = None):
         if(debug):
             print(terms)
         state = startState
@@ -46,6 +50,8 @@ class Interpreter:
                     code = self.getCode(term)
                 else:
                     code = coder.getCode(term)
+                if(code == self.Code.ERROR and customGetCode != None):
+                    code = customGetCode(term)
                 code = switcher.get(code, -1)
                 if(code == self.Code.ERROR):
                     code = anyInputCode if anyInputCode != None else code
@@ -65,9 +71,13 @@ class Interpreter:
             [0, 0, 3, 0, 0, 0], # identifier
             [0, 0, 0, 2, 0, 0], # COMMA
             [0, 0, 0, 4, 0, 0], # AS
-            [0, 0, 0, 0, 5, 0]  # Data Type
+            [0, 0, 0, 0, 5, 0], # Data Type
+            [0, 0, 3, 0, 0, 0]  # AssignmentOperator
         ]
-        terms = re.split(' |(\,)', strLine)
+        
+        # terms = re.split(' |(\,)', strLine)
+        terms = re.split("(VAR)|(AS)|(INT)", strLine)
+        terms = [x for x in terms if x is not None]
         finalStates = [ 5 ]
         deadStates = [ 0 ]
         mySwitcher = {
@@ -75,8 +85,15 @@ class Interpreter:
             self.Code.IDENTIFIER : 1,
             self.Code.COMMA: 2,
             self.Code.AS: 3,
-            self.Code.DATA_TYPE: 4
+            self.Code.DATA_TYPE: 4,
+            self.Code.ASSIGNMENT_STMT : 5
         }
+        # Todo: Create Custome Get Code if ERROR is Caught
+        customCode : lambda str:
+            if(self.isValidAssignmentStatement(str)):
+                return self.Code.ASSIGNMENT_STMT
+            return self.Code.ERROR
+        
         return self.validate(terms,state,finalStates, deadStates, table, mySwitcher, None, debug, None)
         
     def isValidCommentStatement(self, strLine, debug = False):
@@ -142,7 +159,7 @@ class Interpreter:
         mySwitcher = {
             self.Code.OUTPUT: 0,
             self.Code.IDENTIFIER: 1,
-            self.Code.STRING: 2,
+            self.Code.STRING_CONST: 2,
             self.Code.CONCATENATOR: 3,
             self.Code.NEWLINE: 4
         }
@@ -176,6 +193,27 @@ class Interpreter:
         self.inorder(nodeList[0])
         # print(strLine.split())
     
+    def isValidAssignmentStatement(self, strLine, debug = False):
+        state = 1
+        table = [
+        #    0  1  2  3  4, 5, 6, 7, 8
+            [0, 2, 0, 4, 0, 0, 4, 0, 0], # identifier
+            [0, 0, 3, 0, 6, 0, 0, 0, 0], # =
+            [0, 0, 0, 5, 0, 0, 5, 0, 0]  # Numeric/String/Character/Boolean Constant
+        ]
+        terms = re.split(' |(\=)', strLine)
+        finalStates = [ 4, 5 ]
+        deadStates = [ 0 ]
+        mySwitcher = {
+            self.Code.IDENTIFIER : 0,
+            self.Code.EQUAL: 1,
+            self.Code.NUMERIC_CONST: 2,
+            self.Code.BOOLEAN_CONST: 2,
+            self.Code.STRING_CONST: 2,
+            self.Code.CHARACTER_CONST: 2
+        }
+        return self.validate(terms,state,finalStates, deadStates, table, mySwitcher, None, debug, None)
+    
     def inorder(self, t):
         if t is not None:
             self.inorder(t.left)
@@ -204,7 +242,7 @@ class Interpreter:
         }
         return self.validate(str, state, finalStates, deadStates, table, mySwitcher, self.charParser)
     
-    def isValidString(self, str, debug = False):
+    def isValidStringConstant(self, str, debug = False):
         state = 1
         table = [
         #    0  1  2, 3, 4, 5
@@ -243,7 +281,32 @@ class Interpreter:
             self.charParser.Code.DOT: 0,
         }
         return self.validate(str, state, finalStates, deadStates, table, mySwitcher, self.charParser, debug, anyState)
-    
+
+    def isValidCharacterConstant(self, str, debug = False):
+        state = 1
+        table = [
+        #    0  1  2, 3, 4, 5, 6
+            [0, 2, 3, 0, 5, 0, 3], # '
+            [0, 0, 4, 0, 5, 0, 0], # [
+            [0, 0, 0, 0, 0, 6, 0], # ]
+            [0, 0, 6, 0, 0, 0, 0], # Digit
+            [0, 0, 6, 0, 0, 0, 0], # Letter
+            [0, 0, 6, 0, 5, 0, 0], # Any
+        ]
+        anyState = 5
+        finalStates = [ 3 ]
+        deadStates = [ 0 ]
+        mySwitcher = {
+            self.charParser.Code.SINGLE_QUOTE: 0,
+            self.charParser.Code.OSQRBK: 1,
+            self.charParser.Code.CSQRBK: 2,
+            self.charParser.Code.DIGIT: 3,
+            self.charParser.Code.LETTER: 4
+        }
+        return self.validate(str, state, finalStates, deadStates, table, mySwitcher, self.charParser, debug, anyState)
+
+    def isValidBooleanConstant(self, str, debug = False):
+        return str == "FALSE" or str == "TRUE"
     # KEYWORDS
 
     def isValidVAR(self, str):
@@ -324,11 +387,17 @@ class Interpreter:
         # Dynamice
         if(self.isValidIdentifier(str)):
             return self.Code.IDENTIFIER
-        if(self.isValidString(str)):
-            return self.Code.STRING
+        if(self.isValidStringConstant(str)):
+            return self.Code.STRING_CONST
         if(self.isValidNumericConstant(str)):
             return self.Code.NUMERIC_CONST
+        if(self.isValidBooleanConstant(str)):
+            return self.Code.BOOLEAN_CONST
+        if(self.isValidCharacterConstant(str)):
+            return self.Code.CHARACTER_CONST
         # characters
+        if(self.charParser.isEqualSign(str)):
+            return self.Code.EQUAL
         if(self.charParser.isComma(str)):
             return self.Code.COMMA
         if(self.isCommentOperator(str)):

@@ -26,6 +26,7 @@ class CharacterParser:
         SPECIAL = 19
         SHARP = 20
         DOT = 21
+        SINGLE_QUOTE = 22
 
     def isDigit(self, char):
         num = ord(char)
@@ -101,6 +102,9 @@ class CharacterParser:
 
     def isDOTSign(self, char):
         return char == '.'
+    
+    def isSingleQuote(self, char):
+        return char == '\''
 
     def getCode(self, str):
         if(len(str) > 1):
@@ -147,7 +151,10 @@ class CharacterParser:
             return self.Code.SHARP
         if(self.isDOTSign(str)):
             return self.Code.DOT
+        if(self.isSingleQuote(str)):
+            return self.Code.SINGLE_QUOTE
         if(self.isSpecialChar(str)):
             return self.Code.SPECIAL
+        
         return self.Code.ERROR
         
