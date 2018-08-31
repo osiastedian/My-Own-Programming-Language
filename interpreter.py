@@ -76,8 +76,10 @@ class Interpreter:
         ]
         
         # terms = re.split(' |(\,)', strLine)
-        terms = re.split("(VAR)|(AS)|(INT)", strLine)
+        terms = re.split("(VAR)|(AS)|(INT)|(CHAR)|(BOOL)|(FLOAT)|(,)", strLine)
         terms = [x for x in terms if x is not None]
+        terms = [x for x in terms if x is not ' ']
+        terms = [x for x in terms if x is not '']
         finalStates = [ 5 ]
         deadStates = [ 0 ]
         mySwitcher = {
@@ -89,12 +91,12 @@ class Interpreter:
             self.Code.ASSIGNMENT_STMT : 5
         }
         # Todo: Create Custome Get Code if ERROR is Caught
-        customCode : lambda str:
+        def customCode (str):
             if(self.isValidAssignmentStatement(str)):
                 return self.Code.ASSIGNMENT_STMT
             return self.Code.ERROR
         
-        return self.validate(terms,state,finalStates, deadStates, table, mySwitcher, None, debug, None)
+        return self.validate(terms,state,finalStates, deadStates, table, mySwitcher, None, debug, None, customCode)
         
     def isValidCommentStatement(self, strLine, debug = False):
         state = 1

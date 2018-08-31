@@ -6,8 +6,13 @@ import re
 parser = CharacterParser()
 interpreter = Interpreter()
 
-str = "VAR abcd = 10 AS INT"
-print(str, interpreter.isValidInitializationStatement(str, True))
+# str = 'OUTPUT: "hi"'
+str = 'OUTPUT: abc & "hi" & b & "#" & w_23 & "[#]"'
+print(str, interpreter.isValidOutputStatement(str, True))
+# str = '"Hi"'
+# print(str, interpreter.getCode(str))
+# str = "VAR abcd = 10,bcd = 100 AS INT"
+# print(str, interpreter.isValidInitializationStatement(str, True))
 # str = 'abc=b=10'
 # print(str, interpreter.isValidAssignmentStatement(str, True))
 # str = "TRUEa"

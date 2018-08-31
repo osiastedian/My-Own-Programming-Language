@@ -2,6 +2,11 @@ from interpreter import Interpreter
 from enum import Enum
 class Executer:
 
+    class Statment:
+        def __init__(self, code : int = -1, line: str = ""):
+            self.code = code  
+            self.line = line
+
     class Code(Enum):
         ERROR = -1
         INIT_STATEMENT = 0
@@ -14,10 +19,15 @@ class Executer:
 
     def __init__(self):
         self.interpreter = Interpreter()
+        self.parsed = []
+        self.memory = []
     
     def executeProgram(self, strLines):
         for line in strLines:
-            print('Code:', self.getCode(line),'\t\t=',line)
+            stmt = self.Statment(self.getCode(line), line)
+            self.parsed.append(stmt)
+        for stmt in self.parsed:
+            print('Code:', stmt.code,'\t\t=',stmt.line)
     
     def getCode(self, strLine):
         if(self.interpreter.isValidInitializationStatement(strLine)):
@@ -46,7 +56,7 @@ strLines = [
 'abc=b=10',
 'w_23=’a’',
 '* this is a comment',
-'OUTPUT: abc & “hi” & b & “#” & w_23 & “[#]”',
+'OUTPUT: abc & "hi" & b & "#" & w_23 & "[#]"',
 'STOP'
 ]
 
