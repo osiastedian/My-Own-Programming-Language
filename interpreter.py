@@ -372,6 +372,19 @@ class Interpreter:
     def isConcatenator(self, str):
         return True if (len(str) == 1) & (self.charParser.getCode(str[0]) == self.charParser.Code.AMPERSAND) else False
 
+    def isKeyWord(self, str):
+        code = self.getCode(str)
+        mySwitcher = {
+            self.Code.VAR: 0,
+            self.Code.AS: 1,
+            self.Code.START: 2,
+            self.Code.STOP: 3,
+            self.Code.DATA_TYPE: 4,
+            self.Code.OUTPUT: 5
+        }
+        code = mySwitcher.get(code, -1)
+        return code != -1
+
     def getCode(self, str):
         # KEYWORDS
         if(self.isValidVAR(str)):
