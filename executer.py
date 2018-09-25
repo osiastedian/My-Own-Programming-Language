@@ -20,6 +20,10 @@ class Executer:
         def setValue(self, val:str):
             if(self.type == "CHAR"):
                 self.value = val.replace('\'','')
+            elif(self.type == "FLOAT"):
+                self.value = float(val)
+            elif(self.type == "INT"):
+                self.value = int(val)
             else:
                 self.value = val
             # print(self.type,":[", self.value,"]")
@@ -94,11 +98,52 @@ class Executer:
     def execute_ASSIGNMENT_STATEMENT(self, strLine):
         terms = self.removeGarbageFromArray(re.split('(\=)', strLine))
         val = terms.pop()
-        if(self.interpreter.isValidIdentifier(val)):
-            val = self.getVariableData(val)
+        eqTerms = re.split(' |(\+)|(\/)|(\-)|(\*)|(\()|(\))',val)
+        eqTerms = self.removeGarbageFromArray(eqTerms)
+        nodeList = []
+        for term in eqTerms:
+            temp = Interpreter.Node(term)
+            nodeList.append(temp)
+        node = self.nodeCreate(nodeList)
+        val = self.evaluateNode(node)
+        print("Value", val)
         variables = [x for x in terms if x is not '=']
         for variable in variables:
             self.setVariable(variable, val)
+
+    def evaluateNode(self, node):
+        return self.postOrder(node)
+    
+    def postOrder(self, node):
+        if node == None:
+            return None
+        elif node.left == None and node.right == None:
+            if self.interpreter.isValidNumericConstant(node.value):
+                return float(node.value) if "." in node.value else int(node.value)
+            elif self.interpreter.isValidBooleanConstant(node.value):
+                return True if node.value == "TRUE" else False
+            elif self.interpreter.isValidIdentifier(node.value):
+                return self.getVariableData(node.value)
+            else:
+                return node.value
+        else:
+            left = self.postOrder(node.left)
+            right = self.postOrder(node.right)
+            result = 0
+            operation = node.value
+            # print("Left:", left, "Right:", right, "Operation", operation)
+            if operation == "*":
+                result = left * right
+            elif operation == "/":
+                result = left / right
+            elif operation == "+":
+                result = left + right
+            elif operation == "-":
+                result = left - right
+            else:
+                result = None
+            # print("Result:", result)
+            return result
 
     def execute_OUTPUT_STATEMENT(self, strLine):
         terms = self.removeGarbageFromArray(re.split('OUTPUT:|&',strLine))
@@ -106,7 +151,7 @@ class Executer:
         outputLines = []
         for term in terms:
             if(self.interpreter.isValidIdentifier(term)):
-                outputStr+= self.getVariableData(term)
+                outputStr+= str(self.getVariableData(term))
             elif(self.interpreter.isNewLine(term)):
                 outputLines.append(outputStr)
                 outputStr = ""
@@ -166,21 +211,66 @@ class Executer:
         if(self.interpreter.isValidAssignmentStatement(strLine)):
             return self.Code.ASSIGNMENT_STATEMENT
         return self.Code.ERROR
+    
+    def findPair(self,nodeList: [], index):
+        stack = []
+        retIndex = index
+        for node in nodeList:
+            if(node.value == '('):
+                stack.append(node.value)
+            elif(node.value == ')'):
+                stack.pop()
+            if len(stack) == 0:
+                break
+            retIndex = retIndex + 1
+        return retIndex
+
+    def nodeCreate(self,nodeList:[]):
+        index = 0
+        # print("Node List Start:", nodeList)
+        while index < len(nodeList):
+            if (nodeList[index].value == '('):
+                pairIndex= self.findPair(nodeList[index:],index)
+                removedList = nodeList[index:pairIndex+1]
+                del removedList[0]
+                del removedList[-1]
+                node = self.nodeCreate(removedList)
+                del nodeList[index:pairIndex+1]
+                node.value = str(self.postOrder(node))
+                node.left = node.right = None
+                nodeList.insert(index,node)
+            index = index + 1
+        operationSequenc = ['*','/','+','-']
+        for operation in operationSequenc:
+            index = 0
+            while index < len(nodeList):
+                if(nodeList[index].value == operation):
+                    if(index+1 < len(nodeList)):
+                        nodeList[index].right = nodeList[index+1]
+                        del nodeList[index+1]
+                    if(index-1 >= 0):
+                        nodeList[index].left = nodeList[index-1]
+                        del nodeList[index-1]
+                index = index + 1
+        # print("Node List End:", nodeList)
+        return nodeList[0]
+
 
 
 exec = Executer()
 
 strLines = [
 '* my first program in CFPL',
-'VAR abc, b, c AS INT',
+'VAR abc, b, c AS FLOAT',
 'VAR x, w_23=’w’ AS CHAR',
 'VAR t=”TRUE” AS BOOL',
 'START',
-'abc = b = 110 ',
+'abc = b = 100 + (3.33 * 3 )',
+'b = b + abc',
 'c = b',
 "w_23='a'",
 '* this is a comment',
-'OUTPUT: abc & " hi " & c & # & w_23 & "[#]"',
+'OUTPUT: abc & " " &  b & " hi " & c & # & w_23 & "[#]"',
 'STOP'
 ]
 

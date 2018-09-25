@@ -195,13 +195,21 @@ class Interpreter:
     def isValidAssignmentStatement(self, strLine, debug = False):
         state = 1
         table = [
-        #    0  1  2  3  4, 5, 6, 7, 8
-            [0, 2, 0, 4, 0, 0, 4, 0, 0], # identifier
-            [0, 0, 3, 0, 6, 0, 0, 0, 0], # =
-            [0, 0, 0, 5, 0, 0, 5, 0, 0]  # Numeric/String/Character/Boolean Constant
+        #    0  1  2  3  4
+            [0, 2, 0, 4, 0], # identifier
+            [0, 0, 3, 0, 3] # =
         ]
         terms = re.split(' |(\=)', strLine)
-        finalStates = [ 4, 5 ]
+        terms = self.removeGarbageFromArray(terms)
+        equation = ""
+        indexOfEQ = 0
+        for i, e in reversed(list(enumerate(terms))):
+            if e == "=":
+                break
+            equation = e + equation
+            indexOfEQ = i
+        del terms[indexOfEQ:]
+        finalStates = [ 3 ]
         deadStates = [ 0 ]
         mySwitcher = {
             self.Code.IDENTIFIER : 0,
@@ -211,13 +219,71 @@ class Interpreter:
             self.Code.STRING_CONST: 2,
             self.Code.CHARACTER_CONST: 2
         }
-        return self.validate(terms,state,finalStates, deadStates, table, mySwitcher, None, debug, None)
-    
-    def inorder(self, t):
-        if t is not None:
-            self.inorder(t.left)
-            print (t.value),
-            self.inorder(t.right)
+        currentState = self.validate(terms,state,finalStates, deadStates, table, mySwitcher, None, debug, None)
+        if currentState:
+            try:
+                eqTerms = re.split(' |(\+)|(\/)|(\-)|(\*)|(\()|(\))',equation)
+                eqTerms = self.removeGarbageFromArray(terms)
+                nodeList = []
+                for term in eqTerms:
+                    temp = Interpreter.Node(term)
+                    nodeList.append(temp)
+                node = self.nodeCreate(nodeList)
+                return node != None
+            except:
+                return False
+        return False
+
+    def findPair(self,nodeList: [], index):
+        stack = []
+        retIndex = index
+        for node in nodeList:
+            if(node.value == '('):
+                stack.append(node.value)
+            elif(node.value == ')'):
+                stack.pop()
+            if len(stack) == 0:
+                break
+            retIndex = retIndex + 1
+        return retIndex
+
+    def nodeCreate(self,nodeList:[]):
+        index = 0
+        while index < len(nodeList):
+            if (nodeList[index].value == '('):
+                pairIndex= self.findPair(nodeList[index:],index)
+                removedList = nodeList[index:pairIndex+1]
+                del removedList[0]
+                del removedList[-1]
+                node = nodeCreate(removedList)
+                del nodeList[index:pairIndex+1]
+                nodeList.insert(index,node)
+            index = index + 1
+        operationSequenc = ['*','/','+','-']
+        for operation in operationSequenc:
+            index = 0
+            while index < len(nodeList):
+                if(nodeList[index].value == operation):
+                    if(index+1 < len(nodeList)):
+                        nodeList[index].right = nodeList[index+1]
+                        del nodeList[index+1]
+                    if(index-1 >= 0):
+                        nodeList[index].left = nodeList[index-1]
+                        del nodeList[index-1]
+                index = index + 1
+        return nodeList[0]
+
+
+    def inorderTraverse(self,node):
+        strRet = ""
+        if node == None:
+            return
+        if node.left != None:
+            strRet += inorderTraverse(node.left)
+        strRet += node.value
+        if node.right != None:
+            strRet += inorderTraverse(node.right)
+        return strRet
 
     def isValidBooleanExpression(self, strLine, debug = False):
         return
