@@ -94,6 +94,8 @@ class Executer:
     def execute_ASSIGNMENT_STATEMENT(self, strLine):
         terms = self.removeGarbageFromArray(re.split('(\=)', strLine))
         val = terms.pop()
+        if(self.interpreter.isValidIdentifier(val)):
+            val = self.getVariableData(val)
         variables = [x for x in terms if x is not '=']
         for variable in variables:
             self.setVariable(variable, val)
@@ -174,10 +176,11 @@ strLines = [
 'VAR x, w_23=’w’ AS CHAR',
 'VAR t=”TRUE” AS BOOL',
 'START',
-'abc = b = c = 10 ',
+'abc = b = 110 ',
+'c = b',
 "w_23='a'",
 '* this is a comment',
-'OUTPUT: abc & "hi" & b & # & w_23 & "[#]"',
+'OUTPUT: abc & " hi " & c & # & w_23 & "[#]"',
 'STOP'
 ]
 

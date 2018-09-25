@@ -76,10 +76,7 @@ class Interpreter:
         ]
         
         # terms = re.split(' |(\,)', strLine)
-        terms = re.split("(VAR)|(AS)|(INT)|(CHAR)|(BOOL)|(FLOAT)|(,)", strLine)
-        terms = [x for x in terms if x is not None]
-        terms = [x for x in terms if x is not ' ']
-        terms = [x for x in terms if x is not '']
+        terms = self.removeGarbageFromArray(re.split("(VAR)|(AS)|(INT)|(CHAR)|(BOOL)|(FLOAT)|(,)", strLine))
         finalStates = [ 5 ]
         deadStates = [ 0 ]
         mySwitcher = {
@@ -154,7 +151,7 @@ class Interpreter:
             [0, 0, 3, 0, 3], # New Line
             [0, 0, 0, 0, 0] # Others
         ]
-        terms = re.split(' ',strLine)
+        terms = self.removeGarbageFromArray(re.split('(OUTPUT:)|(&)',strLine))
         othersInput = 5
         finalStates = [ 3 ]
         deadStates = [ 0 ]
@@ -192,7 +189,7 @@ class Interpreter:
                     continue
                 index = index + 1
         # print('Final:',nodeList)
-        self.inorder(nodeList[0])
+        return self.inorder(nodeList[0])
         # print(strLine.split())
     
     def isValidAssignmentStatement(self, strLine, debug = False):
@@ -371,6 +368,15 @@ class Interpreter:
 
     def isConcatenator(self, str):
         return True if (len(str) == 1) & (self.charParser.getCode(str[0]) == self.charParser.Code.AMPERSAND) else False
+
+    def removeGarbageFromArray(str, terms, strip = True):
+        terms = [x for x in terms if x is not None]
+        terms = [x for x in terms if x is not ' ']
+        terms = [x for x in terms if x is not '']
+        if(strip):
+            terms = [x.strip() for x in terms]
+        return terms
+
 
     def isKeyWord(self, str):
         code = self.getCode(str)

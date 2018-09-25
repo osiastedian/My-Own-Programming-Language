@@ -1,14 +1,98 @@
 from parser import CharacterParser
 from interpreter import Interpreter
-
 import re
 
 parser = CharacterParser()
 interpreter = Interpreter()
 
+def removeGarbageFromArray(terms, strip = True):
+        terms = [x for x in terms if x is not None]
+        terms = [x for x in terms if x is not ' ']
+        terms = [x for x in terms if x is not '']
+        if(strip):
+            terms = [x.strip() for x in terms]
+        return terms
+
+def findPair(nodeList: [], index):
+    stack = []
+    retIndex = index
+    for node in nodeList:
+        if(node.value == '('):
+            stack.append(node.value)
+        elif(node.value == ')'):
+            stack.pop()
+        if len(stack) == 0:
+            break
+        retIndex = retIndex + 1
+    return retIndex
+
+def nodeCreate(nodeList:[]):
+    index = 0
+    while index < len(nodeList):
+        if (nodeList[index].value == '('):
+            pairIndex= findPair(nodeList[index:],index)
+            removedList = nodeList[index:pairIndex+1]
+            del removedList[0]
+            del removedList[-1]
+            node = nodeCreate(removedList)
+            del nodeList[index:pairIndex+1]
+            nodeList.insert(index,node)
+        index = index + 1
+    operationSequenc = ['*','/','+','-']
+    for operation in operationSequenc:
+        index = 0
+        while index < len(nodeList):
+            if(nodeList[index].value == operation):
+                if(index+1 < len(nodeList)):
+                    nodeList[index].right = nodeList[index+1]
+                    del nodeList[index+1]
+                if(index-1 >= 0):
+                    nodeList[index].left = nodeList[index-1]
+                    del nodeList[index-1]
+            index = index + 1
+    return nodeList[0]
+
+# str = "( abcd + 1234 * ( 142 + 3 ) ) * 4 + 1"
+# terms = re.split(' |(\+)|(\/)|(\-)|(\*)|(\()|(\))',str)
+# terms = removeGarbageFromArray(terms)
+# nodeList = []
+# start = 0
+# index = 0
+# for term in terms:
+#     temp = Interpreter.Node(term)
+#     print(index,':',term)
+#     index = index + 1
+#     nodeList.append(temp)
+# pairIndex = findPair(nodeList,0)
+# # removedList = nodeList[start:pairIndex+1]
+# # del nodeList[start:pairIndex+1]
+# print('NodeList:')
+# index = 0
+# for node in nodeList[5:]:
+#     print(index,':',node.value)
+#     index = index + 1
+# print('Removed List:')
+# index = 0
+# for node in removedList:
+#     print(index,':',node.value)
+#     index = index + 1
+# print()
+str = "abc / 4  + (1 - 3) * 4"
+# str = "4 + (1-3) * 3"
+terms = re.split(' |(\+)|(\/)|(\-)|(\*)|(\()|(\))',str)
+terms = removeGarbageFromArray(terms)
+nodeList = []
+for term in terms:
+    temp = Interpreter.Node(term)
+    nodeList.append(temp)
+node = nodeCreate(nodeList)
+print(node)
+# print(str, interpreter.isValidArithmeticOperation(str,True))
+
+
 # str = 'OUTPUT: "hi"'
-str = 'OUTPUT: abc & "hi" & b & "#" & w_23 & "[#]"'
-print(str, interpreter.isValidOutputStatement(str, True))
+# str = 'OUTPUT: abc & "hi" & b & "#" & w_23 & "[#]"'
+# print(str, interpreter.isValidOutputStatement(str, True))
 # str = '"Hi"'
 # print(str, interpreter.getCode(str))
 # str = "VAR abcd = 10,bcd = 100 AS INT"
