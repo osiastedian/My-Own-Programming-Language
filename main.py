@@ -5,8 +5,11 @@ import re
 parser = CharacterParser()
 interpreter = Interpreter()
 
-str = "abc = abc / 4  + (1 - 3) * 4"
-print(str, interpreter.isValidAssignmentStatement(str, True))
+# str = "ac = abc == 100 && abc"
+str = "100+(3.33*3)"
+print(str,interpreter.isValidBooleanOperation(str))
+# str = "abc = abc / 4  + (1 - 3) * 4"
+# print(str, interpreter.isValidAssignmentStatement(str, True))
 
 # def removeGarbageFromArray(terms, strip = True):
 #         terms = [x for x in terms if x is not None]

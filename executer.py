@@ -96,15 +96,31 @@ class Executer:
         self.programStopped = True
 
     def execute_ASSIGNMENT_STATEMENT(self, strLine):
-        terms = self.removeGarbageFromArray(re.split('(\=)', strLine))
-        val = terms.pop()
-        eqTerms = re.split(' |(\+)|(\/)|(\-)|(\*)|(\()|(\))',val)
+        # print("HI:",strLine)
+        terms = self.removeGarbageFromArray(re.split(' |(\=\=)|(\=)', strLine))
+        equation = ""
+        indexOfEQ = 0
+        for i, e in reversed(list(enumerate(terms))):
+            if e == "=":
+                break
+            equation = e + equation
+            indexOfEQ = i
+        del terms[indexOfEQ:]
+        isBooleanEquation = self.interpreter.isValidBooleanOperation(equation)
+        if(isBooleanEquation):
+            eqTerms = re.split(' |(\()|(\))|(\=\=)|(\<\=)|(\>\=)|(\&\&)|(\|\|)|(\<)|(\>)',equation)
+        else:
+            eqTerms = re.split(' |(\+)|(\/)|(\-)|(\*)|(\()|(\))',equation)
         eqTerms = self.removeGarbageFromArray(eqTerms)
+        
         nodeList = []
         for term in eqTerms:
             temp = Interpreter.Node(term)
             nodeList.append(temp)
-        node = self.nodeCreate(nodeList)
+        if isBooleanEquation:
+            node = self.nodeCreate(nodeList, ["==","<=",">=","<",">","&&","||"])
+        else:
+            node = self.nodeCreate(nodeList)
         val = self.evaluateNode(node)
         print("Value", val)
         variables = [x for x in terms if x is not '=']
@@ -140,9 +156,24 @@ class Executer:
                 result = left + right
             elif operation == "-":
                 result = left - right
+            #boolean operations
+            elif operation == "==":
+                result = left == right
+            elif operation == "<=":
+                result = left <= right
+            elif operation == ">=":
+                result = left >= right
+            elif operation == "<":
+                result = left < right
+            elif operation == ">":
+                result = left > right
+            elif operation == "&&":
+                result = left and right
+            elif operation == "||":
+                result = left or right
             else:
                 result = None
-            # print("Result:", result)
+            print("Result:", result)
             return result
 
     def execute_OUTPUT_STATEMENT(self, strLine):
@@ -189,6 +220,7 @@ class Executer:
         if(name in self.memory):
             self.memory[name].setValue(newVal)
         else:
+            print(name,"caused an exception")
             raise
     
     def getVariableData(self, name:str):
@@ -225,7 +257,7 @@ class Executer:
             retIndex = retIndex + 1
         return retIndex
 
-    def nodeCreate(self,nodeList:[]):
+    def nodeCreate(self,nodeList:[], operationSequence = ['*','/','+','-']):
         index = 0
         # print("Node List Start:", nodeList)
         while index < len(nodeList):
@@ -234,14 +266,13 @@ class Executer:
                 removedList = nodeList[index:pairIndex+1]
                 del removedList[0]
                 del removedList[-1]
-                node = self.nodeCreate(removedList)
+                node = self.nodeCreate(removedList, operationSequence)
                 del nodeList[index:pairIndex+1]
                 node.value = str(self.postOrder(node))
                 node.left = node.right = None
                 nodeList.insert(index,node)
             index = index + 1
-        operationSequenc = ['*','/','+','-']
-        for operation in operationSequenc:
+        for operation in operationSequence:
             index = 0
             while index < len(nodeList):
                 if(nodeList[index].value == operation):
@@ -263,15 +294,17 @@ strLines = [
 '* my first program in CFPL',
 'VAR abc, b, c AS FLOAT',
 'VAR x, w_23=’w’ AS CHAR',
-'VAR t=”TRUE” AS BOOL',
+'VAR samp1, samp2, samp3 AS BOOL',
+'VAR t=TRUE AS BOOL',
 'START',
 'abc = b = 100 + (3.33 * 3 )',
 'b = b + abc',
 'c = b',
+'t = abc == b',
 "w_23='a'",
 '* this is a comment',
+'OUTPUT: t',
 'OUTPUT: abc & " " &  b & " hi " & c & # & w_23 & "[#]"',
 'STOP'
 ]
-
 exec.executeProgram(strLines)

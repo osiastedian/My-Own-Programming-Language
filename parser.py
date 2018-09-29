@@ -27,6 +27,8 @@ class CharacterParser:
         SHARP = 20
         DOT = 21
         SINGLE_QUOTE = 22
+        AND = 23
+        OR = 24
 
     def isDigit(self, char):
         num = ord(char)
@@ -105,6 +107,12 @@ class CharacterParser:
     
     def isSingleQuote(self, char):
         return char == '\''
+
+    def isBooleanANDOperator(self, str):
+        return str == "&&"
+    
+    def isBooleanOROperator(self, str):
+        return str == "||"
 
     def getCode(self, str):
         if(len(str) > 1):

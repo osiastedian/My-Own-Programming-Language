@@ -32,6 +32,7 @@ class Interpreter:
         BOOLEAN_CONST = 14
         CHARACTER_CONST = 15
         EQUAL = 16
+        IF = 17
 
         ASSIGNMENT_STMT = 100
     
@@ -140,6 +141,23 @@ class Interpreter:
         }
         return self.validate(terms,state,finalStates, deadStates, table, mySwitcher, None, debug, 1)
 
+    def isValidIFstatement(self, strLine, debug = False):
+        state = 1
+        table = [
+        #    0  1  2
+            [0, 2, 0], # IF
+            [0, 0, 0], # Others
+            [0, 0, 0], # Others
+            [0, 0, 0] # Others
+        ]
+        terms = re.split(' ',strLine)
+        finalStates = [ 2 ]
+        deadStates = [ 0 ]
+        mySwitcher = {
+            self.Code.STOP: 0
+        }
+        return self.validate(terms,state,finalStates, deadStates, table, mySwitcher, None, debug, 1)
+
     def isValidOutputStatement(self, strLine, debug = False):
         state = 1
         table = [
@@ -164,33 +182,33 @@ class Interpreter:
         }
         return self.validate(terms,state,finalStates, deadStates, table, mySwitcher, None, debug, othersInput)
 
-    def isValidArithmeticOperation(self, strLine, debug = False):
+    def isValidBooleanOperation(self, strLine, debug = False):
         stack = []
-        strLine = strLine.replace('(',' ( ')
-        strLine = strLine.replace(')',' ) ')
-        strLine = strLine.replace('+',' + ')
-        strLine = strLine.replace('-',' - ')
-        strLine = strLine.replace('/',' / ')
-        strLine = strLine.replace('*',' * ')
+        eqTerms = re.split(' |(\()|(\))|(\=\=)|(\<\=)|(\>\=)|(\&\&)|(\|\|)|(\<)|(\>)|(\+)|(\/)|(\-)|(\*)|(\()|(\))',strLine)
+        eqTerms = self.removeGarbageFromArray(eqTerms)
+        if "=" in eqTerms:
+            return False
         nodeList = []
-        for elem in strLine.split():
+        for elem in eqTerms:
+            if(self.isArithmeticOperator(elem)):
+                return False
             temp = self.Node(elem)
             nodeList.append(temp)
         length = len(nodeList)
-        
-        while len(nodeList) != 1:
-            index = 0
-            while index < len(nodeList):
-                if(self.isArithmeticOperator(nodeList[index].value)):
-                    nodeList[index].right = nodeList[index+1]
-                    nodeList[index].left = nodeList[index-1]
-                    del nodeList[index+1]
-                    del nodeList[index-1]
-                    continue
-                index = index + 1
-        # print('Final:',nodeList)
-        return self.inorder(nodeList[0])
-        # print(strLine.split())
+        newNode = self.nodeCreate(nodeList,["==","<=",">=","<",">","&&","||"])
+        return self.inorderTraverse(newNode) != None
+
+    def isValidArithmeticOperation(self, strLine, debug = False):
+        stack = []
+        eqTerms = re.split(' |(\+)|(\/)|(\-)|(\*)|(\()|(\))',strLine)
+        eqTerms = self.removeGarbageFromArray(eqTerms)
+        nodeList = []
+        for elem in eqTerms:#strLine.split():
+            temp = self.Node(elem)
+            nodeList.append(temp)
+        length = len(nodeList)
+        newNode = self.nodeCreate(nodeList)
+        return self.inorderTraverse(newNode) != None
     
     def isValidAssignmentStatement(self, strLine, debug = False):
         state = 1
@@ -199,7 +217,7 @@ class Interpreter:
             [0, 2, 0, 4, 0], # identifier
             [0, 0, 3, 0, 3] # =
         ]
-        terms = re.split(' |(\=)', strLine)
+        terms = re.split(' |(\=\=)|(\=)', strLine)
         terms = self.removeGarbageFromArray(terms)
         equation = ""
         indexOfEQ = 0
@@ -222,16 +240,13 @@ class Interpreter:
         currentState = self.validate(terms,state,finalStates, deadStates, table, mySwitcher, None, debug, None)
         if currentState:
             try:
-                eqTerms = re.split(' |(\+)|(\/)|(\-)|(\*)|(\()|(\))',equation)
-                eqTerms = self.removeGarbageFromArray(terms)
-                nodeList = []
-                for term in eqTerms:
-                    temp = Interpreter.Node(term)
-                    nodeList.append(temp)
-                node = self.nodeCreate(nodeList)
-                return node != None
+                return self.isValidArithmeticOperation(equation)
             except:
-                return False
+                pass
+            try:
+                return self.isValidBooleanOperation(equation)
+            except:
+                pass
         return False
 
     def findPair(self,nodeList: [], index):
@@ -247,7 +262,7 @@ class Interpreter:
             retIndex = retIndex + 1
         return retIndex
 
-    def nodeCreate(self,nodeList:[]):
+    def nodeCreate(self,nodeList:[], operationSequence = ['*','/','+','-']):
         index = 0
         while index < len(nodeList):
             if (nodeList[index].value == '('):
@@ -255,12 +270,13 @@ class Interpreter:
                 removedList = nodeList[index:pairIndex+1]
                 del removedList[0]
                 del removedList[-1]
-                node = nodeCreate(removedList)
+                node = self.nodeCreate(removedList)
                 del nodeList[index:pairIndex+1]
+                node.value = "TEMP" # simulate SOLVED INPUT
+                node.left = node.right = None
                 nodeList.insert(index,node)
             index = index + 1
-        operationSequenc = ['*','/','+','-']
-        for operation in operationSequenc:
+        for operation in operationSequence:
             index = 0
             while index < len(nodeList):
                 if(nodeList[index].value == operation):
@@ -279,14 +295,12 @@ class Interpreter:
         if node == None:
             return
         if node.left != None:
-            strRet += inorderTraverse(node.left)
+            strRet += self.inorderTraverse(node.left)
         strRet += node.value
         if node.right != None:
-            strRet += inorderTraverse(node.right)
+            strRet += self.inorderTraverse(node.right)
         return strRet
 
-    def isValidBooleanExpression(self, strLine, debug = False):
-        return
     # PARSERS
 
     def isValidIdentifier(self, str):
@@ -429,11 +443,27 @@ class Interpreter:
         # print(opSwitcher.get(code,False))
         return opSwitcher.get(code,False)
 
+    def isBooleanOperator(self, str):
+        code = self.charParser.getCode(str)
+        opSwitcher = {
+            self.charParser.Code.EQEQ: True,
+            self.charParser.Code.LTEQ: True,
+            self.charParser.Code.LT: True,
+            self.charParser.Code.GT: True,
+            self.charParser.Code.GTEQ: True,
+            self.charParser.Code.AND: True,
+            self.charParser.Code.OR: True
+        }
+        return opSwitcher.get(code,False)
+
     def isNewLine(self, str):
         return True if (len(str) == 1) & (self.charParser.getCode(str[0]) == self.charParser.Code.SHARP) else False
 
     def isConcatenator(self, str):
         return True if (len(str) == 1) & (self.charParser.getCode(str[0]) == self.charParser.Code.AMPERSAND) else False
+
+    def isIF(self, str):
+        return str == "IF"
 
     def removeGarbageFromArray(str, terms, strip = True):
         terms = [x for x in terms if x is not None]
@@ -471,6 +501,8 @@ class Interpreter:
             return self.Code.DATA_TYPE
         if(self.isOutput(str)):
             return self.Code.OUTPUT
+        if(self.isIF(str)):
+            return self.Code.IF
         # Dynamice
         if(self.isValidIdentifier(str)):
             return self.Code.IDENTIFIER
