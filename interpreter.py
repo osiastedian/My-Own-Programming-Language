@@ -141,22 +141,25 @@ class Interpreter:
         }
         return self.validate(terms,state,finalStates, deadStates, table, mySwitcher, None, debug, 1)
 
+    def isValidWhileStatement(self, strLine, debug = False):
+        terms = self.removeGarbageFromArray(re.split('(WHILE)',strLine))
+        if(len(terms) != 2):
+            return False
+        if(terms[0] != "WHILE"):
+            return False
+        if(terms[1][0] != "(" or terms[1][-1] != ")"):
+            return False
+        return self.isValidBooleanOperation(terms[1],debug)
+
     def isValidIFstatement(self, strLine, debug = False):
-        state = 1
-        table = [
-        #    0  1  2
-            [0, 2, 0], # IF
-            [0, 0, 0], # Others
-            [0, 0, 0], # Others
-            [0, 0, 0] # Others
-        ]
-        terms = re.split(' ',strLine)
-        finalStates = [ 2 ]
-        deadStates = [ 0 ]
-        mySwitcher = {
-            self.Code.STOP: 0
-        }
-        return self.validate(terms,state,finalStates, deadStates, table, mySwitcher, None, debug, 1)
+        terms = self.removeGarbageFromArray(re.split('(IF)',strLine))
+        if(len(terms) != 2):
+            return False
+        if(terms[0] != "IF"):
+            return False
+        if(terms[1][0] != "(" or terms[1][-1] != ")"):
+            return False
+        return self.isValidBooleanOperation(terms[1],debug)
 
     def isValidOutputStatement(self, strLine, debug = False):
         state = 1

@@ -1,12 +1,15 @@
 from interpreter import Interpreter
 from enum import Enum
 import re
+import copy
 class Executer:
 
     class Statment:
         def __init__(self, code:int = -1, line: str = ""):
             self.code = code  
             self.line = line
+        def __str__(self):
+            return "code: "+str(self.code)+"\tLine:"+self.line
 
     class Variable:
         def __init__(self, name: str, value: str, vType: str):
@@ -26,7 +29,6 @@ class Executer:
                 self.value = int(val)
             else:
                 self.value = val
-            # print(self.type,":[", self.value,"]")
         def getValue(self):
             return self.value
         
@@ -41,23 +43,81 @@ class Executer:
         STOP_STATEMENT = 3
         OUTPUT_STATEMENT = 4
         ASSIGNMENT_STATEMENT = 5
+        IF_STATEMENT = 6
+        WHILE_STATEMENT = 7
         
 
     def __init__(self):
         self.interpreter = Interpreter()
         self.parsed = []
         self.memory = {}
+        self.lines = []
         self.programStarted: bool = False
         self.programStopped: bool = True
     
-    def executeProgram(self, strLines):
-        for line in strLines:
+    def setMemory(self, memory):
+        self.memory = memory
+    
+    def displayMemory(self):
+        for attr, value in self.memory.items():
+            print(attr, ':', value)
+
+    def setLines(self,strLines):
+        self.lines = [ line for line in strLines if self.getCode(line) != self.Code.COMMENT_STATEMENT]
+
+    def loadLines(self):
+        for line in self.lines:
             stmt = self.Statment(self.getCode(line), line)
             self.parsed.append(stmt)
-        for stmt in self.parsed:
-            if(stmt.code == self.Code.COMMENT_STATEMENT):
-                continue
-            elif(stmt.code == self.Code.INIT_STATEMENT):
+        index = 0
+        parseLen = len(self.parsed)
+        
+        while(index < parseLen):
+            stmt = self.parsed[index]
+            if(stmt.code == self.Code.START_STATEMENT):
+                pairStopIndex = self.findPairStop(index+1)
+                del self.parsed[index:pairStopIndex+1]
+                parseLen = len(self.parsed)
+                executer = Executer()
+                executer.setLines(self.lines[index+1:pairStopIndex])
+                self.parsed.insert(index,executer)
+            index = index + 1
+                
+    
+    def findPairStop(self, index):
+        numStack = 1
+        pairStopIndex = 0
+        for idx, stmt in enumerate(self.parsed[index:]):
+            if(stmt.code == self.Code.START_STATEMENT):
+                numStack = numStack + 1
+            elif (stmt.code == self.Code.STOP_STATEMENT):
+                numStack = numStack - 1
+                if(numStack == 0):
+                    pairStopIndex = idx
+                    break
+        return index + pairStopIndex
+
+    def executeProgram(self):
+        self.loadLines()
+        index = 0
+        parsedLen = len(self.parsed)
+        strLines = []
+        while index < parsedLen:
+            stmt = self.parsed[index]
+            addToIndex, strNewLines = self.executeStatement(stmt)
+            index = index + addToIndex
+            strLines = strLines + strNewLines
+            index = index + 1
+        return strLines
+    
+    def executeStatement(self, stmt):
+        index = 0
+        strLines = []
+        if(isinstance(stmt, Executer)):
+            stmt.setMemory(self.memory)
+            strLines = stmt.executeProgram() + strLines
+        else:
+            if(stmt.code == self.Code.INIT_STATEMENT):
                 self.execute_INIT_STATEMENT(stmt.line)
             elif(stmt.code == self.Code.START_STATEMENT):
                 self.execute_START_STATEMENT()
@@ -66,11 +126,15 @@ class Executer:
             elif(stmt.code == self.Code.ASSIGNMENT_STATEMENT):
                 self.execute_ASSIGNMENT_STATEMENT(stmt.line)
             elif(stmt.code == self.Code.OUTPUT_STATEMENT):
-                self.execute_OUTPUT_STATEMENT(stmt.line)
-            else:
-                self.execute_OUTPUT_STATEMENT(stmt.line)
-            print('Code:', stmt.code,'\t\t=',stmt.line)
-    
+                strLines = strLines + self.execute_OUTPUT_STATEMENT(stmt.line)
+            elif(stmt.code == self.Code.IF_STATEMENT):
+                index = index + self.execute_IF_STATEMENT(stmt.line)
+            elif(stmt.code == self.Code.WHILE_STATEMENT):
+                addToIndex, strNewLines = self.execute_WHILE_STATEMENT(stmt.line, index)
+                index = index + addToIndex
+                strLines = strLines + strNewLines
+        return index, strLines
+
     def execute_INIT_STATEMENT(self, strLine):
         terms = self.removeGarbageFromArray(re.split("(VAR)|(AS)|(INT)|(CHAR)|(BOOL)|(FLOAT)|(,)", strLine))
         # Get Type
@@ -87,6 +151,30 @@ class Executer:
                 newTerm = term.split('=')
                 self.addVariable(newTerm[0],newTerm[1],varType)
     
+    def execute_IF_STATEMENT(self, strLine):
+        terms = self.removeGarbageFromArray(re.split('(IF)',strLine))
+        return not self.solveBooleanEquation(terms[1])
+
+    def execute_WHILE_STATEMENT(self, strLine, index):
+        terms = self.removeGarbageFromArray(re.split('(WHILE)',strLine))
+        strLines = []
+        while(self.solveBooleanEquation(terms[1])):
+            stmt = copy.deepcopy(self.parsed[index+1])
+            newIndex, strNewLines = self.executeStatement(stmt)
+            strLines = strLines + strNewLines
+        return 1 , strLines
+    
+    def solveBooleanEquation(self, equation):
+        isBooleanEquation = self.interpreter.isValidBooleanOperation(equation)
+        eqTerms = re.split(' |(\()|(\))|(\=\=)|(\<\=)|(\>\=)|(\&\&)|(\|\|)|(\<)|(\>)',equation)
+        eqTerms = self.removeGarbageFromArray(eqTerms)
+        nodeList = []
+        for term in eqTerms:
+            temp = Interpreter.Node(term)
+            nodeList.append(temp)
+        node = self.nodeCreate(nodeList, ["==","<=",">=","<",">","&&","||"])
+        return self.evaluateNode(node)
+
     def execute_START_STATEMENT(self):
         self.programStarted = True
         self.programStopped = False
@@ -122,7 +210,6 @@ class Executer:
         else:
             node = self.nodeCreate(nodeList)
         val = self.evaluateNode(node)
-        print("Value", val)
         variables = [x for x in terms if x is not '=']
         for variable in variables:
             self.setVariable(variable, val)
@@ -145,17 +232,23 @@ class Executer:
         else:
             left = self.postOrder(node.left)
             right = self.postOrder(node.right)
-            result = 0
             operation = node.value
+            result = 0
+            if(isinstance(left, bool)):
+                left = 'TRUE' if left == True else left
+                left = 'FALSE' if left == False else left
+            if(isinstance(right,bool)):
+                right = 'TRUE' if right == True else right
+                right = 'FALSE' if right == False else right
             # print("Left:", left, "Right:", right, "Operation", operation)
             if operation == "*":
-                result = left * right
+                result = int(left) * int(right)
             elif operation == "/":
-                result = left / right
+                result = int(left) / int(right)
             elif operation == "+":
-                result = left + right
+                result = int(left) + int(right)
             elif operation == "-":
-                result = left - right
+                result = int(left) - int(right)
             #boolean operations
             elif operation == "==":
                 result = left == right
@@ -173,7 +266,9 @@ class Executer:
                 result = left or right
             else:
                 result = None
-            print("Result:", result)
+            if(isinstance(result, bool)):
+                result = 'TRUE' if result == True else result
+                result = 'FALSE' if result == False else result
             return result
 
     def execute_OUTPUT_STATEMENT(self, strLine):
@@ -190,7 +285,6 @@ class Executer:
                 term = term.replace('"','')
                 outputStr+= term
         outputLines.append(outputStr)
-        print(outputLines)
         return outputLines
 
     def removeGarbageFromArray(str, terms, strip = True):
@@ -224,10 +318,14 @@ class Executer:
             raise
     
     def getVariableData(self, name:str):
-        if(name in self.memory):
-            return self.memory[name].getValue()
-        else:
-            raise
+        
+        return self.memory[name].getValue()
+        # if(hasattr(self.memory, name)):
+            # return self.memory[name].getValue()
+        # else:
+            # print('Cant Find:['+name+']\nMemory:')
+            # self.displayMemory()
+            # raise
 
     def getCode(self, strLine):
         if(self.interpreter.isValidInitializationStatement(strLine)):
@@ -242,6 +340,10 @@ class Executer:
             return self.Code.OUTPUT_STATEMENT
         if(self.interpreter.isValidAssignmentStatement(strLine)):
             return self.Code.ASSIGNMENT_STATEMENT
+        if(self.interpreter.isValidIFstatement(strLine)):
+            return self.Code.IF_STATEMENT
+        if(self.interpreter.isValidWhileStatement(strLine)):
+            return self.Code.WHILE_STATEMENT
         return self.Code.ERROR
     
     def findPair(self,nodeList: [], index):
@@ -289,22 +391,37 @@ class Executer:
 
 
 exec = Executer()
-
 strLines = [
-'* my first program in CFPL',
-'VAR abc, b, c AS FLOAT',
-'VAR x, w_23=’w’ AS CHAR',
-'VAR samp1, samp2, samp3 AS BOOL',
-'VAR t=TRUE AS BOOL',
+'VAR t=0 AS INT',
 'START',
-'abc = b = 100 + (3.33 * 3 )',
-'b = b + abc',
-'c = b',
-'t = abc == b',
-"w_23='a'",
-'* this is a comment',
-'OUTPUT: t',
-'OUTPUT: abc & " " &  b & " hi " & c & # & w_23 & "[#]"',
+'WHILE (t < 4)',
+'START',
+'OUTPUT: "Hello World!" & t',
+'t = t + 1',
+'STOP',
+'OUTPUT: "AHAHAHHA SAYUP!" & t',
 'STOP'
+#
 ]
-exec.executeProgram(strLines)
+# strLines = [
+# '* my first program in CFPL',
+# 'VAR abc, b, c AS FLOAT',
+# 'VAR x, w_23=’w’ AS CHAR',
+# 'VAR samp1, samp2, samp3 AS BOOL',
+# 'VAR t=TRUE AS BOOL',
+# 'START',
+# 'IF (t == TRUE)',
+# 'START',
+# 'abc = b = 100 + (3.33 * 3 )',
+# 'STOP',
+# 'b = b + abc',
+# 'c = b',
+# 't = abc == b',
+# "w_23='a'",
+# '* this is a comment',
+# 'OUTPUT: t',
+# 'OUTPUT: abc & " " &  b & " hi " & c & # & w_23 & "[#]"',
+# 'STOP'
+# ]
+exec.setLines(strLines)
+print(exec.executeProgram())
