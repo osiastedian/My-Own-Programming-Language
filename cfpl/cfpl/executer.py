@@ -45,6 +45,7 @@ class Executer:
         ASSIGNMENT_STATEMENT = 5
         IF_STATEMENT = 6
         WHILE_STATEMENT = 7
+        INPUT_STATEMENT = 8
         
 
     def __init__(self):
@@ -52,9 +53,13 @@ class Executer:
         self.parsed = []
         self.memory = {}
         self.lines = []
+        self.inputs = []
         self.programStarted: bool = False
         self.programStopped: bool = True
     
+    def setInputs(self, inputs):
+        self.inputs = inputs
+
     def setMemory(self, memory):
         self.memory = memory
     
@@ -114,6 +119,7 @@ class Executer:
         index = 0
         strLines = []
         if(isinstance(stmt, Executer)):
+            stmt.setInputs(self.inputs)
             stmt.setMemory(self.memory)
             strLines = stmt.executeProgram() + strLines
         else:
@@ -129,6 +135,8 @@ class Executer:
                 strLines = strLines + self.execute_OUTPUT_STATEMENT(stmt.line)
             elif(stmt.code == self.Code.IF_STATEMENT):
                 index = index + self.execute_IF_STATEMENT(stmt.line)
+            elif(stmt.code == self.Code.INPUT_STATEMENT):
+                self.execute_INPUT_STATEMENT(stmt.line)
             elif(stmt.code == self.Code.WHILE_STATEMENT):
                 addToIndex, strNewLines = self.execute_WHILE_STATEMENT(stmt.line, index)
                 index = index + addToIndex
@@ -178,6 +186,19 @@ class Executer:
     def execute_START_STATEMENT(self):
         self.programStarted = True
         self.programStopped = False
+
+    def execute_INPUT_STATEMENT(self,strLine):
+        terms = self.removeGarbageFromArray(re.split('(INPUT:)|,',strLine))
+        terms = terms[1:]
+        for term in terms:
+            try:
+                if len(self.inputs) == 0:
+                    raise
+                data = self.inputs.pop(0)
+                self.setVariable(term, data)
+            except:
+                raise
+        print(terms)
 
     def execute_STOP_STATEMENT(self):
         self.programStarted = False
@@ -344,6 +365,8 @@ class Executer:
             return self.Code.IF_STATEMENT
         if(self.interpreter.isValidWhileStatement(strLine)):
             return self.Code.WHILE_STATEMENT
+        if(self.interpreter.inValidINPUTStatement(strLine)):
+            return self.Code.INPUT_STATEMENT
         return self.Code.ERROR
     
     def findPair(self,nodeList: [], index):
@@ -393,13 +416,17 @@ class Executer:
 exec = Executer()
 strLines = [
 'VAR t=0 AS INT',
+'VAR a,b,c AS INT',
 'START',
-'WHILE (t < 4)',
+'WHILE (t < 3)',
 'START',
-'OUTPUT: "Hello World!" & t',
+'INPUT: a,b',
+'c = a + b',
+'OUTPUT: "Result is "& c',
 't = t + 1',
 'STOP',
 'OUTPUT: "AHAHAHHA SAYUP!" & t',
+'OUTPUT: "Result is "& c',
 'STOP'
 #
 ]
@@ -423,5 +450,6 @@ strLines = [
 # 'OUTPUT: abc & " " &  b & " hi " & c & # & w_23 & "[#]"',
 # 'STOP'
 # ]
+exec.setInputs(["1","1","2","2","3","3",])
 exec.setLines(strLines)
 print(exec.executeProgram())
