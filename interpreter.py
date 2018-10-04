@@ -33,6 +33,7 @@ class Interpreter:
         CHARACTER_CONST = 15
         EQUAL = 16
         IF = 17
+        INPUT = 18
 
         ASSIGNMENT_STMT = 100
     
@@ -160,6 +161,27 @@ class Interpreter:
         if(terms[1][0] != "(" or terms[1][-1] != ")"):
             return False
         return self.isValidBooleanOperation(terms[1],debug)
+
+    def inValidINPUTStatement(self, strline, debug = False):
+        state = 1
+        table = [
+        #    0, 1, 2, 3, 4
+            [0, 2, 0, 0, 0], # OUTPUT
+            [0, 0, 3, 0, 3], # Identifier
+            [0, 0, 0, 4, 0], # Comma
+            [0, 0, 0, 0, 0] # Others
+        ]
+        terms = self.removeGarbageFromArray(re.split('(INPUT:)|(,)',strline))
+        print(terms)
+        othersInput = 5
+        finalStates = [ 3 ]
+        deadStates = [ 0 ]
+        mySwitcher = {
+            self.Code.INPUT: 0,
+            self.Code.IDENTIFIER: 1,
+            self.Code.COMMA: 2
+        }
+        return self.validate(terms,state,finalStates, deadStates, table, mySwitcher, None, debug, othersInput)
 
     def isValidOutputStatement(self, strLine, debug = False):
         state = 1
@@ -421,6 +443,9 @@ class Interpreter:
     def isOutput(self, str):
         return str == "OUTPUT:"
 
+    def isInput(self, str):
+        return str == "INPUT:"
+
     def isANDOperator(self, str):
         return str == "AND"
 
@@ -504,6 +529,8 @@ class Interpreter:
             return self.Code.DATA_TYPE
         if(self.isOutput(str)):
             return self.Code.OUTPUT
+        if(self.isInput(str)):
+            return self.Code.INPUT
         if(self.isIF(str)):
             return self.Code.IF
         # Dynamice

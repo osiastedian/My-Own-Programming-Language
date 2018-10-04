@@ -6,8 +6,11 @@ parser = CharacterParser()
 interpreter = Interpreter()
 
 
-str = "IF (abcd == 1243)"
-print(str, interpreter.isValidIFstatement(str))
+str = "INPUT: abc, a, b ,d"
+print(str, interpreter.inValidINPUTStatement(str, True))
+
+# str = "IF (abcd == 1243)"
+# print(str, interpreter.isValidIFstatement(str))
 
 # str = "ac = abc == 100 && abc"
 # str = "100+(3.33*3)"
