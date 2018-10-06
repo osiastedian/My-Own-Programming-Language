@@ -43,8 +43,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 class ExecuterViewSet(viewsets.ViewSet):
     def create(self, request):
-        body_unicode = request.body.decode('utf-8')
-        body = json.loads(body_unicode)
+        body = request.data
         executer = Executer()
         strLines = body['lines']
         executer.setLines(strLines)
@@ -59,7 +58,9 @@ router.register(r'users', UserViewSet)
 router.register(r'execute', ExecuterViewSet, base_name='execute')
 
 from django.shortcuts import render, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 
+@csrf_exempt
 def loadIndex(request):
     return render(request,"home/index.html")
 
@@ -68,6 +69,6 @@ def loadIndex(request):
 # Additionally, we include login URLs for the browsable API.
 urlpatterns = [
     url(r'^$', loadIndex),
-    url(r'^api', include(router.urls)),
+    url(r'^api/', include(router.urls)),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 ]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

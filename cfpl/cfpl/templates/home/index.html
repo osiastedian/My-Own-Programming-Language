@@ -139,7 +139,7 @@
                     </p>
                 </div>
                 <div class="pull-right">
-                    <h3><button class="btn btn-lg btn-primary">Run</button></h3>   
+                    <h3><button class="btn btn-lg btn-primary" id="runButton">Run</button></h3>   
                 </div>
             </div>
         </div>
@@ -162,42 +162,7 @@
         </div>
     </div>
     <script>
-        var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
-            lineNumbers: true,
-            styleActiveLine: true,
-            matchBrackets: true
-        });
-        var inputEditor = CodeMirror.fromTextArea(document.getElementById("inputs"), {
-            lineNumbers: true,
-            styleActiveLine: true,
-            matchBrackets: true
-        });
-        var outputEditor = CodeMirror.fromTextArea(document.getElementById("outputs"), {
-            lineNumbers: true,
-            styleActiveLine: true,
-            matchBrackets: true
-        });
-        var input = document.getElementById("select");
-        function selectTheme() {
-            var theme = input.options[input.selectedIndex].textContent;
-            editor.setOption("theme", theme);
-            inputEditor.setOption("theme", theme);
-            outputEditor.setOption("theme", theme);
-            location.hash = "#" + theme;
-        }
-        var choice = (location.hash && location.hash.slice(1)) ||
-                        (document.location.search &&
-                        decodeURIComponent(document.location.search.slice(1)));
-        if (choice) {
-            input.value = choice;
-            editor.setOption("theme", choice);
-            inputEditor.setOption("theme", choice);
-            outputEditor.setOption("theme", choice);
-        }
-        CodeMirror.on(window, "hashchange", function() {
-            var theme = location.hash.slice(1);
-            if (theme) { input.value = theme; selectTheme(); }
-        });
+       
     </script>
     <script src="static/main.js"></script>
 </body>
