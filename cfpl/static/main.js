@@ -51,12 +51,13 @@ function getCookie(name) {
     return cookieValue;
 }
 $( "#runButton" ).click(function() {
+    outputEditor.setValue('Loading..');
     let params = {
         lines: editor.getValue().split('\n'),
         inputs: inputEditor.getValue().split('\n')
     };
     var csrftoken = getCookie('csrftoken');
-    $.postJSON = function(url, data, success, args) {
+    $.postJSON = function(url, data, success,error, args) {
     args = $.extend({
         url: url,
         type: 'POST',
@@ -65,11 +66,13 @@ $( "#runButton" ).click(function() {
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
         async: true,
-        success: success
+        success: success,
+        error: error
     }, args);
         return $.ajax(args);
     };
     $.postJSON("/api/execute/", params, function(data, status){
         outputEditor.setValue(data.logs.join('\n'))
-    });
+    }, data => alert(data.responseText)
+    );
 });

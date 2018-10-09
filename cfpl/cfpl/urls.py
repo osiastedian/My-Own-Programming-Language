@@ -46,9 +46,12 @@ class ExecuterViewSet(viewsets.ViewSet):
         body = request.data
         executer = Executer()
         strLines = body['lines']
+        inputs =  body['inputs']
+        print(inputs)
+        executer.setInputs(inputs)
         executer.setLines(strLines)
         logs = executer.executeProgram()
-        return Response({'sample': "Hello World!", 'logs': logs, 'body': body})
+        return Response({'logs': logs, 'body': body})
 
 
 

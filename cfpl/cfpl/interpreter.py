@@ -34,6 +34,7 @@ class Interpreter:
         EQUAL = 16
         IF = 17
         INPUT = 18
+        ELSE = 19
 
         ASSIGNMENT_STMT = 100
     
@@ -273,6 +274,9 @@ class Interpreter:
             except:
                 pass
         return False
+
+    def isELSE(self, strLine):
+        return strLine == "ELSE"
 
     def findPair(self,nodeList: [], index):
         stack = []
@@ -533,6 +537,8 @@ class Interpreter:
             return self.Code.INPUT
         if(self.isIF(str)):
             return self.Code.IF
+        if(self.isELSE(str)):
+            return self.Code.ELSE
         # Dynamice
         if(self.isValidIdentifier(str)):
             return self.Code.IDENTIFIER
