@@ -173,7 +173,6 @@ class Interpreter:
             [0, 0, 0, 0, 0] # Others
         ]
         terms = self.removeGarbageFromArray(re.split('(INPUT:)|(,)',strline))
-        print(terms)
         othersInput = 5
         finalStates = [ 3 ]
         deadStates = [ 0 ]
@@ -210,11 +209,12 @@ class Interpreter:
 
     def isValidBooleanOperation(self, strLine, debug = False):
         stack = []
-        eqTerms = re.split(' |(\()|(\))|(\=\=)|(\<\=)|(\>\=)|(\&\&)|(\|\|)|(\<)|(\>)|(\+)|(\/)|(\-)|(\*)|(\()|(\))',strLine)
+        eqTerms = re.split('(\()|(\))|(\=\=)|(\<\=)|(\>\=)|(\&\&)|(\|\|)|(\<)|(\>)|(\+)|(\/)|(\-)|(\*)|(\()|(\))',strLine)
         eqTerms = self.removeGarbageFromArray(eqTerms)
         if "=" in eqTerms:
             return False
         nodeList = []
+        print('TERMS:', eqTerms)
         for elem in eqTerms:
             if(self.isArithmeticOperator(elem)):
                 return False
@@ -226,15 +226,18 @@ class Interpreter:
 
     def isValidArithmeticOperation(self, strLine, debug = False):
         stack = []
-        eqTerms = re.split(' |(\+)|(\/)|(\-)|(\*)|(\()|(\))',strLine)
+        eqTerms = re.split(' |(\+)|(\/)|(\-)|(\*)|(\%)|(\()|(\))',strLine)
         eqTerms = self.removeGarbageFromArray(eqTerms)
         nodeList = []
         for elem in eqTerms:#strLine.split():
             temp = self.Node(elem)
             nodeList.append(temp)
         length = len(nodeList)
-        newNode = self.nodeCreate(nodeList)
-        return self.inorderTraverse(newNode) != None
+        try:
+            newNode = self.nodeCreate(nodeList)
+            return self.inorderTraverse(newNode) != None
+        except:
+            return False
     
     def isValidAssignmentStatement(self, strLine, debug = False):
         state = 1
@@ -291,7 +294,7 @@ class Interpreter:
             retIndex = retIndex + 1
         return retIndex
 
-    def nodeCreate(self,nodeList:[], operationSequence = ['*','/','+','-']):
+    def nodeCreate(self,nodeList:[], operationSequence = ['*','/','%','+','-']):
         index = 0
         while index < len(nodeList):
             if (nodeList[index].value == '('):
@@ -304,6 +307,8 @@ class Interpreter:
                 node.value = "TEMP" # simulate SOLVED INPUT
                 node.left = node.right = None
                 nodeList.insert(index,node)
+            elif (nodeList[index].value == ')'):
+                raise
             index = index + 1
         for operation in operationSequence:
             index = 0
@@ -470,7 +475,8 @@ class Interpreter:
             self.charParser.Code.PLUS: True,
             self.charParser.Code.MINUS: True,
             self.charParser.Code.DIVIDE: True,
-            self.charParser.Code.MULTIPLY: True
+            self.charParser.Code.MULTIPLY: True,
+            self.charParser.Code.MODULO: True
         }
         # print(opSwitcher.get(code,False))
         return opSwitcher.get(code,False)
@@ -564,4 +570,3 @@ class Interpreter:
         if(self.isArithmeticOperator(str)):
             return self.Code.ARITHMETIC_OP
         return self.Code.ERROR
-    

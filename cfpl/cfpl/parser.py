@@ -29,6 +29,7 @@ class CharacterParser:
         SINGLE_QUOTE = 22
         AND = 23
         OR = 24
+        MODULO = 25
 
     def isDigit(self, char):
         num = ord(char)
@@ -113,8 +114,23 @@ class CharacterParser:
     
     def isBooleanOROperator(self, str):
         return str == "||"
+    
+    def isModuloOperator(self, str):
+        return str == "%"
 
     def getCode(self, str):
+        if(self.isGTSign(str)):
+            return self.Code.GT
+        if(self.isGTEQSign(str)):
+            return self.Code.GTEQ
+        if(self.isLTSign(str)):
+            return self.Code.LT
+        if(self.isLTEQSign(str)):
+            return self.Code.LTEQ
+        if(self.isEQEQSign(str)):
+            return self.Code.EQEQ
+        if(self.isNTEQSign(str)):
+            return self.Code.NTEQ
         if(len(str) > 1):
             return self.Code.ERROR
         if(self.isDigit(str)):
@@ -137,18 +153,6 @@ class CharacterParser:
             return self.Code.COMMA
         if(self.isAmpersand(str)):
             return self.Code.AMPERSAND
-        if(self.isGTSign(str)):
-            return self.Code.GT
-        if(self.isGTEQSign(str)):
-            return self.Code.GTEQ
-        if(self.isLTSign(str)):
-            return self.Code.LT
-        if(self.isLTEQSign(str)):
-            return self.Code.LTEQ
-        if(self.isEQEQSign(str)):
-            return self.Code.EQEQ
-        if(self.isNTEQSign(str)):
-            return self.Code.NTEQ
         if(self.isQuoteSign(str)):
             return self.Code.QUOTE
         if(self.isOpenSqrBracket(str)):
@@ -161,8 +165,12 @@ class CharacterParser:
             return self.Code.DOT
         if(self.isSingleQuote(str)):
             return self.Code.SINGLE_QUOTE
+        if(self.isModuloOperator(str)):
+            return self.Code.MODULO
         if(self.isSpecialChar(str)):
             return self.Code.SPECIAL
         
         return self.Code.ERROR
+
+p = CharacterParser()
         

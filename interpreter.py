@@ -34,6 +34,7 @@ class Interpreter:
         EQUAL = 16
         IF = 17
         INPUT = 18
+        ELSE = 19
 
         ASSIGNMENT_STMT = 100
     
@@ -160,7 +161,7 @@ class Interpreter:
             return False
         if(terms[1][0] != "(" or terms[1][-1] != ")"):
             return False
-        return self.isValidBooleanOperation(terms[1],debug)
+        return self.isValidBooleanOperation(terms[1],debug) or self.isValidArithmeticOperation(terms[1],debug)
 
     def inValidINPUTStatement(self, strline, debug = False):
         state = 1
@@ -209,8 +210,9 @@ class Interpreter:
 
     def isValidBooleanOperation(self, strLine, debug = False):
         stack = []
-        eqTerms = re.split(' |(\()|(\))|(\=\=)|(\<\=)|(\>\=)|(\&\&)|(\|\|)|(\<)|(\>)|(\+)|(\/)|(\-)|(\*)|(\()|(\))',strLine)
+        eqTerms = re.split('(\()|(\))|(\=\=)|(\<\=)|(\>\=)|(\&\&)|(\|\|)|(\<)|(\>)|(\+)|(\/)|(\-)|(\*)|(\()|(\))',strLine)
         eqTerms = self.removeGarbageFromArray(eqTerms)
+        print(strLine,'TERMS',eqTerms)
         if "=" in eqTerms:
             return False
         nodeList = []
@@ -225,15 +227,18 @@ class Interpreter:
 
     def isValidArithmeticOperation(self, strLine, debug = False):
         stack = []
-        eqTerms = re.split(' |(\+)|(\/)|(\-)|(\*)|(\()|(\))',strLine)
+        eqTerms = re.split(' |(\+)|(\/)|(\-)|(\*)|(\%)|(\()|(\))',strLine)
         eqTerms = self.removeGarbageFromArray(eqTerms)
         nodeList = []
         for elem in eqTerms:#strLine.split():
             temp = self.Node(elem)
             nodeList.append(temp)
         length = len(nodeList)
-        newNode = self.nodeCreate(nodeList)
-        return self.inorderTraverse(newNode) != None
+        try:
+            newNode = self.nodeCreate(nodeList)
+            return self.inorderTraverse(newNode) != None
+        except:
+            return False
     
     def isValidAssignmentStatement(self, strLine, debug = False):
         state = 1
@@ -274,6 +279,9 @@ class Interpreter:
                 pass
         return False
 
+    def isELSE(self, strLine):
+        return strLine == "ELSE"
+
     def findPair(self,nodeList: [], index):
         stack = []
         retIndex = index
@@ -287,7 +295,7 @@ class Interpreter:
             retIndex = retIndex + 1
         return retIndex
 
-    def nodeCreate(self,nodeList:[], operationSequence = ['*','/','+','-']):
+    def nodeCreate(self,nodeList:[], operationSequence = ['*','/','%','+','-']):
         index = 0
         while index < len(nodeList):
             if (nodeList[index].value == '('):
@@ -466,7 +474,8 @@ class Interpreter:
             self.charParser.Code.PLUS: True,
             self.charParser.Code.MINUS: True,
             self.charParser.Code.DIVIDE: True,
-            self.charParser.Code.MULTIPLY: True
+            self.charParser.Code.MULTIPLY: True,
+            self.charParser.Code.MODULO: True
         }
         # print(opSwitcher.get(code,False))
         return opSwitcher.get(code,False)
@@ -533,6 +542,8 @@ class Interpreter:
             return self.Code.INPUT
         if(self.isIF(str)):
             return self.Code.IF
+        if(self.isELSE(str)):
+            return self.Code.ELSE
         # Dynamice
         if(self.isValidIdentifier(str)):
             return self.Code.IDENTIFIER
@@ -558,4 +569,3 @@ class Interpreter:
         if(self.isArithmeticOperator(str)):
             return self.Code.ARITHMETIC_OP
         return self.Code.ERROR
-    

@@ -1,5 +1,5 @@
-from parser import CharacterParser
-from interpreter import Interpreter
+from .parser import CharacterParser
+from .interpreter import Interpreter
 import re
 
 parser = CharacterParser()
@@ -7,7 +7,7 @@ interpreter = Interpreter()
 
 
 str = "=="
-print(str, interpreter.isBooleanOperator(str))
+print(str, interpreter.isBooleanOperator(str, True))
 
 # str = "IF (abcd == 1243)"
 # print(str, interpreter.isValidIFstatement(str))

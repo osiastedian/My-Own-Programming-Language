@@ -218,13 +218,26 @@ class Executer:
     
     def solveBooleanEquation(self, equation):
         isBooleanEquation = self.interpreter.isValidBooleanOperation(equation)
-        eqTerms = re.split(' |(\()|(\))|(\=\=)|(\<\=)|(\>\=)|(\&\&)|(\|\|)|(\<)|(\>)',equation)
+        eqTerms = re.split('(\()|(\))|(\=\=)|(\<\=)|(\>\=)|(\&\&)|(\|\|)|(\<)|(\>)',equation)
+        eqTerms = self.removeGarbageFromArray(eqTerms)
+        nodeList = []
+        for term in eqTerms:
+            if(not self.interpreter.isBooleanOperator(term) and self.interpreter.isValidArithmeticOperation(term)):
+                term = str(self.solveArithmeticEquation(term))
+            temp = Interpreter.Node(term)
+            nodeList.append(temp)
+        print('Nodelist:',nodeList)
+        node = self.nodeCreate(nodeList, ["==","<=",">=","<",">","&&","||"])
+        return self.evaluateNode(node)
+    
+    def solveArithmeticEquation(self, equation):
+        eqTerms = re.split(' |(\+)|(\/)|(\-)|(\*)|(\%)|(\()|(\))',equation)
         eqTerms = self.removeGarbageFromArray(eqTerms)
         nodeList = []
         for term in eqTerms:
             temp = Interpreter.Node(term)
             nodeList.append(temp)
-        node = self.nodeCreate(nodeList, ["==","<=",">=","<",">","&&","||"])
+        node = self.nodeCreate(nodeList)
         return self.evaluateNode(node)
 
     def execute_START_STATEMENT(self):
@@ -250,7 +263,7 @@ class Executer:
         self.programStopped = True
 
     def execute_ASSIGNMENT_STATEMENT(self, strLine):
-        # print("HI:",strLine)
+        print("HI:",strLine)
         terms = self.removeGarbageFromArray(re.split(' |(\=\=)|(\=)', strLine))
         equation = ""
         indexOfEQ = 0
@@ -260,37 +273,32 @@ class Executer:
             equation = e + equation
             indexOfEQ = i
         del terms[indexOfEQ:]
-        isBooleanEquation = self.interpreter.isValidBooleanOperation(equation)
-        if(isBooleanEquation):
-            eqTerms = re.split(' |(\()|(\))|(\=\=)|(\<\=)|(\>\=)|(\&\&)|(\|\|)|(\<)|(\>)',equation)
-        else:
-            eqTerms = re.split(' |(\+)|(\/)|(\-)|(\*)|(\()|(\))',equation)
-        eqTerms = self.removeGarbageFromArray(eqTerms)
-        
-        nodeList = []
-        for term in eqTerms:
-            temp = Interpreter.Node(term)
-            nodeList.append(temp)
-        if isBooleanEquation:
-            node = self.nodeCreate(nodeList, ["==","<=",">=","<",">","&&","||"])
-        else:
-            node = self.nodeCreate(nodeList)
-        val = self.evaluateNode(node)
+        val = None
+        if(self.interpreter.isValidArithmeticOperation(equation)):
+            val = self.solveArithmeticEquation(equation)
+        elif(self.interpreter.isValidBooleanOperation(equation)):
+            val = self.solveBooleanEquation(equation)
+        # val = self.solveBooleanEquation(equation) if isBooleanEquation else 
+        # val = self.evaluateNode(node)
         variables = [x for x in terms if x is not '=']
         for variable in variables:
             self.setVariable(variable, val)
 
     def evaluateNode(self, node):
-        return self.postOrder(node)
+        return self.postOrder(node, True)
     
-    def postOrder(self, node):
+    def postOrder(self, node, evaluationMode = False):
         if node == None:
             return None
         elif node.left == None and node.right == None:
+            print('Node Value:',node.value)
             if self.interpreter.isValidNumericConstant(node.value):
                 return float(node.value) if "." in node.value else int(node.value)
             elif self.interpreter.isValidBooleanConstant(node.value):
-                return True if node.value == "TRUE" else False
+                if evaluationMode:
+                    return True if node.value == "TRUE" else False
+                else:
+                    return node.value
             elif self.interpreter.isValidIdentifier(node.value):
                 return self.getVariableData(node.value)
             else:
@@ -308,13 +316,15 @@ class Executer:
                 right = 'FALSE' if right == False else right
             # print("Left:", left, "Right:", right, "Operation", operation)
             if operation == "*":
-                result = int(left) * int(right)
+                result = float(left) * float(right)
             elif operation == "/":
-                result = int(left) / int(right)
+                result = float(left) / float(right)
+            elif operation == "%":
+                result = float(left) % float(right)
             elif operation == "+":
-                result = int(left) + int(right)
+                result = float(left) + float(right)
             elif operation == "-":
-                result = int(left) - int(right)
+                result = float(left) - float(right)
             #boolean operations
             elif operation == "==":
                 result = left == right
@@ -430,7 +440,7 @@ class Executer:
             retIndex = retIndex + 1
         return retIndex
 
-    def nodeCreate(self,nodeList:[], operationSequence = ['*','/','+','-']):
+    def nodeCreate(self,nodeList:[], operationSequence = [['*','/','%'],['+','-']]):
         index = 0
         # print("Node List Start:", nodeList)
         while index < len(nodeList):
@@ -445,15 +455,16 @@ class Executer:
                 node.left = node.right = None
                 nodeList.insert(index,node)
             index = index + 1
-        for operation in operationSequence:
-            index = 0
-            while index < len(nodeList):
-                if(nodeList[index].value == operation):
-                    if(index+1 < len(nodeList)):
-                        nodeList[index].right = nodeList[index+1]
-                        del nodeList[index+1]
-                    if(index-1 >= 0):
-                        nodeList[index].left = nodeList[index-1]
-                        del nodeList[index-1]
-                index = index + 1
+        if(len(nodeList) > 0):
+            for operation in operationSequence:
+                index = 0
+                while index < len(nodeList):
+                    if(nodeList[index].value in operation):
+                        if(index+1 < len(nodeList)):
+                            nodeList[index].right = nodeList[index+1]
+                            del nodeList[index+1]
+                        if(index-1 >= 0):
+                            nodeList[index].left = nodeList[index-1]
+                            del nodeList[index-1]
+                    index = index + 1
         return nodeList[0]
