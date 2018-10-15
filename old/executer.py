@@ -308,9 +308,9 @@ class Executer:
                 return float(node.value) if "." in node.value else int(node.value)
             elif self.interpreter.isValidBooleanConstant(node.value) or node.value == 'True' or node.value == 'False':
                 if evaluationMode:
-                    return True if node.value == "TRUE" else False
-                else:
-                    return node.value
+                    return True if node.value == "TRUE" or 'True' else False
+                elif(node.value == 'True' or node.value == 'False'):
+                    return True if node.value == 'True' else False
             elif self.interpreter.isValidIdentifier(node.value):
                 return self.getVariableData(node.value)
             else:

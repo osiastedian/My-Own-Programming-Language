@@ -6,8 +6,8 @@ parser = CharacterParser()
 interpreter = Interpreter()
 
 
-str = "=="
-print(str, interpreter.isBooleanOperator(str))
+str = "a<b"
+print(str, interpreter.isValidBooleanOperation(str))
 
 # str = "IF (abcd == 1243)"
 # print(str, interpreter.isValidIFstatement(str))
